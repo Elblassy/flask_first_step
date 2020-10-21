@@ -8,7 +8,7 @@ app.config.from_object(config.DevelopmentConfig)
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db = SQLAlchemy(app)
 
-from models import User
+from models import User, UserAccount
 
 
 @app.route("/")
@@ -17,7 +17,7 @@ def hello():
 
 
 @app.route("/signup", methods=['POST'])
-def signup():
+def sign_up():
     if request.data:
         content = request.json
         print(content)
@@ -30,15 +30,30 @@ def signup():
             )
             db.session.add(user)
             db.session.commit()
-            return jsonify(user.serialize()), 200
+            return jsonify(user.serialize()), 201
         except Exception as e:
             return jsonify({'Error': e}), 401
     else:
-        return jsonify({'Error': 'please input correct data'}), 401
+        return jsonify({'Error': 'please input correct data'}), 400
 
 
-@app.route("/get-users")
-def get_all():
+@app.route("/signin", methods=['POST'])
+def sign_in():
+    if request.data:
+        content = request.json
+        phone_number = content['phone_number']
+        query = db.session.query(User).filter(User.phone_number == phone_number)
+        result = query.first()
+        if result:
+            return jsonify({"message": "user exist"}), 200
+        else:
+            return jsonify({"message": "user not exist"}), 401
+    else:
+        return jsonify({'Error': 'please input correct data'}), 400
+
+
+@app.route("/get-users", methods=['GET'])
+def get_users():
     try:
         users = User.query.all()
         return jsonify([e.serialize() for e in users]), 200
